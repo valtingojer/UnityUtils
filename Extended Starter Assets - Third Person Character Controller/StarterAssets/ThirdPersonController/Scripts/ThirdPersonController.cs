@@ -46,6 +46,11 @@ namespace StarterAssets
         [Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
         public float FallTimeout = 0.15f;
 
+        [Header("External Animator")]
+        [Tooltip("If the character animator is in other component")]
+        [SerializeField]
+        private Animator ExternalAnimator;
+
         [Header("Can Over Jump")]
         [Tooltip("If the character can jump in the air or not.")]
         public bool CanOverJump = true;
@@ -114,6 +119,7 @@ namespace StarterAssets
         private int _animIDSpeed;
         private int _animIDGrounded;
         private int _animIDJump;
+        private int _animIDOverJump;
         private int _animIDFreeFall;
         private int _animIDMotionSpeed;
 
@@ -127,7 +133,23 @@ namespace StarterAssets
 
         private const float _threshold = 0.01f;
 
-        private bool _hasAnimator;
+        private bool _hasAnimator
+        {
+            get
+            {
+                bool result = false;
+                if (ExternalAnimator != null)
+                {
+                    _animator = ExternalAnimator;
+                    result = true;
+                }
+                else
+                {
+                    result = TryGetComponent(out _animator);
+                }
+                return result;
+            }
+        }
 
         private bool IsCurrentDeviceMouse
         {
@@ -154,8 +176,13 @@ namespace StarterAssets
         private void Start()
         {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-            
-            _hasAnimator = TryGetComponent(out _animator);
+
+            if (ExternalAnimator != null)
+                _animator = ExternalAnimator;
+            else
+                TryGetComponent(out _animator);
+
+
             _controller = GetComponent<CharacterController>();
             _input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM && STARTER_ASSETS_PACKAGES_CHECKED
@@ -173,8 +200,6 @@ namespace StarterAssets
 
         private void Update()
         {
-            _hasAnimator = TryGetComponent(out _animator);
-
             JumpAndGravity();
             GroundedCheck();
             Move();
@@ -190,6 +215,7 @@ namespace StarterAssets
             _animIDSpeed = Animator.StringToHash("Speed");
             _animIDGrounded = Animator.StringToHash("Grounded");
             _animIDJump = Animator.StringToHash("Jump");
+            _animIDOverJump = Animator.StringToHash("OverJump");
             _animIDFreeFall = Animator.StringToHash("FreeFall");
             _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
         }
@@ -300,7 +326,7 @@ namespace StarterAssets
                 _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
             }
         }
-        
+
         private void JumpGroundedResetFallTimeout()
         {
             // reset the fall timeout timer
@@ -313,6 +339,7 @@ namespace StarterAssets
             if (_hasAnimator)
             {
                 _animator.SetBool(_animIDJump, false);
+                _animator.SetBool(_animIDOverJump, false);
                 _animator.SetBool(_animIDFreeFall, false);
             }
         }
@@ -334,7 +361,7 @@ namespace StarterAssets
                 _jumpTimeoutDelta -= Time.deltaTime;
             }
         }
-        
+
         private void JumpResetTimerDelta()
         {
             // reset the jump timeout timer
@@ -376,7 +403,7 @@ namespace StarterAssets
             }
             return result;
         }
-        
+
         private void DoJump(bool[] args = null)
         {
             // Jump
@@ -389,7 +416,11 @@ namespace StarterAssets
                 // update animator if using character
                 if (_hasAnimator)
                 {
-                    _animator.SetBool(_animIDJump, true);
+                    if(OverJumping)
+                        _animator.SetBool(_animIDOverJump, true);
+                    else
+                        _animator.SetBool(_animIDJump, true);
+
                 }
             }
         }
@@ -406,14 +437,14 @@ namespace StarterAssets
                 DoJump(new bool[] { _input.jump, _jumpTimeoutDelta <= 0.0f });
                 JumpCountTimeoutDeltaDecresce();
             }
-            else if(CanOverJump && Jumping && !OverJumping && _input.jump)
+            else if (CanOverJump && Jumping && !OverJumping && _input.jump)
             {
                 Jumping = true;
                 OverJumping = true;
                 _input.jump = false;
                 DoJump();
             }
-            else if(_input.jump)
+            else if (_input.jump)
             {
                 // if we are not grounded, and has already over jump
                 // do not over jump again
