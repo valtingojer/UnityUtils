@@ -50,6 +50,12 @@ namespace StarterAssets
         [Tooltip("If the character can jump in the air or not.")]
         public bool CanOverJump = true;
 
+
+        [Header("Lock Walk Direction")]
+        [Tooltip("Lock walking direction axis")]
+        public bool lockX = false;
+        public bool lockY = false;
+
         [Header("Player Grounded")]
         [Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
         public bool Grounded = true;
@@ -260,6 +266,9 @@ namespace StarterAssets
 
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
             if (_animationBlend < 0.01f) _animationBlend = 0f;
+
+            _input.move.x = (lockX) ? 0.0f : _input.move.x;
+            _input.move.y = (lockY) ? 0.0f : _input.move.y;
 
             // normalise input direction
             Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
