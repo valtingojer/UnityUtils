@@ -116,6 +116,7 @@ namespace StarterAssets
         private float _fallTimeoutDelta;
 
         // animation IDs
+        private int _animIDRun;
         private int _animIDSpeed;
         private int _animIDGrounded;
         private int _animIDJump;
@@ -213,6 +214,7 @@ namespace StarterAssets
         private void AssignAnimationIDs()
         {
             _animIDSpeed = Animator.StringToHash("Speed");
+            _animIDRun = Animator.StringToHash("Run");
             _animIDGrounded = Animator.StringToHash("Grounded");
             _animIDJump = Animator.StringToHash("Jump");
             _animIDOverJump = Animator.StringToHash("OverJump");
@@ -320,11 +322,13 @@ namespace StarterAssets
                              new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
             // update animator if using character
-            if (_hasAnimator)
-            {
-                _animator.SetFloat(_animIDSpeed, _animationBlend);
-                _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
-            }
+            if (_hasAnimator && !Jumping && !OverJumping)
+                _animator.SetBool(_animIDRun, (_animationBlend > 0.5));
+            else
+                _animator.SetBool(_animIDRun, false);
+            
+            _animator.SetFloat(_animIDSpeed, _animationBlend);
+            _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
         }
 
         private void JumpGroundedResetFallTimeout()
